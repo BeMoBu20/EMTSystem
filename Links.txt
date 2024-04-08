@@ -1,8 +1,8 @@
 Links para GitHub
 
-PULL
+PUSH
 Nombre: EMT-System
 Link: https://github.com/BeMoBu20/EMT-System.git
 
 CLONE
-Link para clonar: 
+Link para clonar: https://github.com/BeMoBu20/EMT-System.git

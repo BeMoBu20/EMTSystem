@@ -29,6 +29,8 @@ public class IntContratos extends JFrame{
     private JButton cerrarButton;
     private JLabel labelAdscripcion;
     private JLabel labelPuesto;
+    private JTextPane contratosTextPane;
+    private JTextPane listaDeEmpleadosTextPane;
     DefaultTableModel mt = new DefaultTableModel(); //Creamos modelo de la tabla
     private DatosEmpresariales datosEmpresariales; //Generamos un objeto tipo DatosEmpresariales
     private Contrato contrato; //Generamos un objeto tipo Contrato

@@ -1,7 +1,6 @@
 package gestor.empresarial.datos;
 
 import gestor.IntMenu;
-import gestor.empresarial.datos.DatosPersonales;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -22,9 +21,10 @@ public class IntMenuDos extends JFrame{
     private JTextField fieldWhats;
     private JButton borrarButton;
     private JButton modificarButton;
-    private JLabel titulo;
     private JPanel panelbase;
     private JScrollPane scrollForTable;
+    private JTextPane datosGuardadosTextPane;
+    private JTextPane datosPersonalesTextPane;
     DefaultTableModel mt = new DefaultTableModel(); //Creamos modelo de la tabla
     private DatosPersonales datosPersonales; //Generamos un objeto tipo DatosPersonales
 

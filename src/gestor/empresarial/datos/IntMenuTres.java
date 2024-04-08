@@ -28,6 +28,8 @@ public class IntMenuTres extends JFrame{
     private JLabel whatsEmpleado;
     private JLabel correoEmpleado;
     private JTextField fieldBuscador;
+    private JTextPane datosEmpresarialesTextPane;
+    private JTextPane listaDeEmpleadosTextPane;
     DefaultTableModel mt = new DefaultTableModel(); //Creamos modelo de la tabla
     private DatosEmpresariales datosEmpresariales; //Generamos un objeto tipo DatosPersonales
     private DatosPersonales datosPersonales; //Generamos un objeto tipo DatosPersonales
