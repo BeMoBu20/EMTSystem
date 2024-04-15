@@ -2,6 +2,8 @@ package gestor.empresarial.contrato;
 
 import gestor.IntMenu;
 import gestor.empresarial.datos.DatosEmpresariales;
+import gestor.empresarial.datos.DatosPersonales;
+import gestor.empresarial.empleados.Empleados;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -9,7 +11,6 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 
 public class IntContratos extends JFrame{
 
@@ -20,7 +21,7 @@ public class IntContratos extends JFrame{
     private JButton agregarButton;
     private JScrollPane scrollForTable;
     private JTable tablaC;
-    private JTextField fieldBuscar;
+    private JTextField fieldBuscador;
     private JComboBox comboCargo;
     private JButton borrarButton;
     private JButton modificarButton;
@@ -31,72 +32,117 @@ public class IntContratos extends JFrame{
     private JLabel labelPuesto;
     private JTextPane contratosTextPane;
     private JTextPane listaDeEmpleadosTextPane;
+    private JTextPane empleadoTextPane;
+    private JTextPane empresaTextPane;
     DefaultTableModel mt = new DefaultTableModel(); //Creamos modelo de la tabla
-    private DatosEmpresariales datosEmpresariales; //Generamos un objeto tipo DatosEmpresariales
-    private Contrato contrato; //Generamos un objeto tipo Contrato
-    private int idEncontrado = 0;
-    private String nombreEncontrado = "";
+    private Empleados empleados;
+    private int indice = -1;
 
 
     public IntContratos(){
-        datosEmpresariales = DatosEmpresariales.getInstancia();
-        contrato = Contrato.getInstancia();
+        empleados = empleados.getInstancia();
 
-        //Ajustamos los parametros de la ventana
-        setTitle("Menu EMT-System"); //Estabalecemos el titulo de la ventana
-        this.setSize(1100,500); //Establecemos el tamaño de la ventana
-        this.setLocationRelativeTo(null); //Establecemos la posicion inicial de la ventana en el centro
-        this.getContentPane().add(panel1);
-        this.setVisible(true); //Volvemos nuestra ventana visible
-        setDefaultCloseOperation(EXIT_ON_CLOSE); //Indicamos que termine la ejecucion del programa al cerrar la ventana
+        ajustesVentana(); //Ajustamos los parametros de la ventana
 
         comboCargo.setModel(new DefaultComboBoxModel<>(Cargos.values()));// Establecemos el modelo del JComboBox utilizando los valores de la clase enum Cargos
 
         initComponents(); //Ajustes de la tabla
         funcionesBotones(); //Codigo que define las funcionalidades de los botones
-        actualizarTablaDesdeContrato(); //Codigo para obtener los datos de la tabla
+    }
+
+    private void ajustesVentana(){
+        setTitle("Menu EMT-System"); //Establecemos el titulo de la ventana
+        this.setSize(1100,500); //Establecemos el tamaño de la ventana
+        this.setLocationRelativeTo(null); //Establecemos la posicion inicial de la ventana en el centro
+        this.getContentPane().add(panel1);
+        this.setVisible(true); //Volvemos nuestra ventana visible
+        setDefaultCloseOperation(EXIT_ON_CLOSE); //Indicamos que termine la ejecucion del programa al cerrar la ventana
     }
 
     private void initComponents() {
         String encabezados[] = {"ID","Nombre Completo","No.Contrato", "Año","Horario","Tipo de Cargo"};
-        mt.setColumnIdentifiers(encabezados);
-        tablaC.getTableHeader().setResizingAllowed(false);
-        tablaC.getTableHeader().setReorderingAllowed(false);
-        tablaC.setModel(mt);
+        mt.setColumnIdentifiers(encabezados); //Definimos los titulos de las columnas
+        tablaC.getTableHeader().setResizingAllowed(false); //No permitimos que se cambie el tamaño de la ventana
+        tablaC.getTableHeader().setReorderingAllowed(false); //No permitimos que el usuario reordene las columnas de la tabla
+        tablaC.setModel(mt); //Establecemos el diseño de la tabla
+        if (empleados.datosContratoVacios() == false) {
+            actualizarTablaDesdeContrato();// Si los arreglos no están vacíos, muestra los datos en la tabla
+        }
     }
 
     private void obtenerYGuardarContrato() {
+        //Obtenemos los datos de los JTextField
         int noContrato = Integer.parseInt(fieldContrato.getText());
         int annio = Integer.parseInt(fieldAnnio.getText());
         String horario = fieldHorario.getText();
         Cargos tipocargo = (Cargos) comboCargo.getSelectedItem();
-        // Guardamos los datos en DatosEmpresariales
-        contrato.addDatos(idEncontrado, nombreEncontrado, noContrato, annio, horario, tipocargo);
-        contrato.imprimirDatos();
-        idEncontrado = -1;
-        nombreEncontrado = "";
+
+        //Guardamos los datos en Contrato
+        Contrato obj = new Contrato(noContrato, annio, horario, tipocargo);
+
+        //Guardamos nuestro obj en Empleados
+        empleados.addContrato(indice,obj);
+        empleados.imprimirDatos();
     }
 
     private void actualizarTablaDesdeContrato() {
-        contrato.imprimirDatos();
-        //Obtenemos los datos de las listas en Contrato
-        List<Integer> ids = contrato.getId();
-        List<String> nombres = contrato.getNombre();
-        List<Integer> noContrato = contrato.getNoContrato();
-        List<Integer> annio = contrato.getAnnio();
-        List<String> horario = contrato.getHorario();
-        List<String> tipoCargo = contrato.getTipoCargo();
-
         // Limpiamos la tabla antes de agregar los nuevos datos para evitar duplicados
         mt.setRowCount(0);
 
         // Agregamos los datos a la tabla
-        for (int i = 0; i < ids.size(); i++) {
-            mt.addRow(new Object[]{ids.get(i), nombres.get(i), noContrato.get(i), annio.get(i), horario.get(i), tipoCargo.get(i)});
+        for (int i = 0; i < 100; i++) {
+            Contrato obj = empleados.getInfoContrato(i);
+            DatosPersonales obj2 = empleados.getInfoPersonal(i);
+            if(obj != null){
+                int id = empleados.getID(i);
+                String nombre = obj2.getNombre();
+                int noContrato = obj.getNoContrato();
+                int annio = obj.getAnnio();
+                String horario = obj.getHorario();
+                Cargos cargo = obj.getTipoCargo();
+                mt.addRow(new Object[]{id,nombre,noContrato,annio,horario,cargo});
+            }
         }
     }
 
     public void funcionesBotones() {
+        fieldBuscador.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String textoBusqueda = fieldBuscador.getText();
+                if (textoBusqueda != null){
+                    // Buscando el ID ingresado en la lista de IDs en Empleados
+                    int idBuscado = Integer.parseInt(textoBusqueda); // Convertir a entero
+                    indice = empleados.findEmpleado(idBuscado);
+
+                    // Verificando si se encontró el ID
+                    if (indice != -1) {
+                        DatosPersonales datosPersonales = empleados.getInfoPersonal(indice);
+                        DatosEmpresariales datosEmpresariales = empleados.getInfoEmpresarial(indice);
+
+                        // Obteneniendo la información relacionada al ID (nombre, adscripcion, puesto) en la lista en DatosEmpresariales
+                        String nombre= datosPersonales.getNombre();
+                        String adscripcion = datosEmpresariales.getAdscripcion();
+                        String puesto = datosEmpresariales.getPuesto();
+
+                        // Mostrando la información en la ventana
+                        labeIId.setText("ID: "+ idBuscado);
+                        labelName.setText("Nombre: " + nombre);
+                        labelAdscripcion.setText("Adscripcion: " + adscripcion);
+                        labelPuesto.setText("Puesto: " + puesto);
+                        fieldBuscador.setText("");
+                    } else {
+                        // Mostrar un mensaje de error si no se encuentra el ID
+                        JOptionPane.showMessageDialog(IntContratos.this, "ID no encontrado", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+                else {
+                    // Mostrar un mensaje de error si esta vacio el campo
+                    JOptionPane.showMessageDialog(IntContratos.this, "Campo de busqueda vacio", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
         // Agregar un ListSelectionListener a la JTable
         tablaC.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
@@ -105,8 +151,8 @@ public class IntContratos extends JFrame{
                     int selectedRow = tablaC.getSelectedRow();
                     if (selectedRow != -1) { // Verificar si se seleccionó una fila
                         // Obtener datos de la fila seleccionada
-                        Object noContrato = tablaC.getValueAt(selectedRow, 3);
-                        Object annio = tablaC.getValueAt(selectedRow, 2);
+                        Object noContrato = tablaC.getValueAt(selectedRow, 2);
+                        Object annio = tablaC.getValueAt(selectedRow, 3);
                         Object horario = tablaC.getValueAt(selectedRow, 4);
                         Object tipoCargo = tablaC.getValueAt(selectedRow, 5);
 
@@ -120,40 +166,7 @@ public class IntContratos extends JFrame{
             }
         });
 
-        fieldBuscar.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String textoBusqueda = fieldBuscar.getText();
-                if (textoBusqueda != null){
-                    // Buscando el ID ingresado en la lista de IDs en DatosPersonales
-                    int idBuscado = Integer.parseInt(textoBusqueda); // Convertir a entero
-                    int indice = datosEmpresariales.getIds().indexOf(idBuscado);
 
-                    // Verificando si se encontró el ID
-                    if (indice != -1) {
-                        // Obteneniendo la información relacionada al ID (nombre, adscripcion, puesto) en la lista en DatosEmpresariales
-                        idEncontrado = idBuscado;
-                        nombreEncontrado = datosEmpresariales.getNombres().get(indice);
-                        String adscripcion = datosEmpresariales.getAdscripcion().get(indice);
-                        String puesto = datosEmpresariales.getPuesto().get(indice);
-
-                        // Mostrando la información en la ventana
-                        labeIId.setText("ID: "+ idEncontrado);
-                        labelName.setText("Nombre: " + nombreEncontrado);
-                        labelAdscripcion.setText("Adscripcion: " + adscripcion);
-                        labelPuesto.setText("Puesto: " + puesto);
-                        fieldBuscar.setText("");
-                    } else {
-                        // Mostrar un mensaje de error si no se encuentra el ID
-                        JOptionPane.showMessageDialog(IntContratos.this, "ID no encontrado", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-                else {
-                    // Mostrar un mensaje de error si esta vacio el campo
-                    JOptionPane.showMessageDialog(IntContratos.this, "Campo de busqueda vacio", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
 
         cerrarButton.addActionListener(new ActionListener() {
             @Override
@@ -166,7 +179,7 @@ public class IntContratos extends JFrame{
         agregarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (idEncontrado != -1 && nombreEncontrado != ""){
+                if (indice != -1){
                     String noContrato = fieldContrato.getText();
                     String annio = fieldAnnio.getText();
                     String horario = fieldHorario.getText();
@@ -214,15 +227,10 @@ public class IntContratos extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = tablaC.getSelectedRow();
                 if (selectedRow != -1) {
-                    mt.removeRow(selectedRow); //Eliminamos la fila en la tabla
-
-                    // Eliminamos los datos correspondientes en Contrato
-                    contrato.getId().remove(selectedRow);
-                    contrato.getNombre().remove(selectedRow);
-                    contrato.getNoContrato().remove(selectedRow);
-                    contrato.getAnnio().remove(selectedRow);
-                    contrato.getHorario().remove(selectedRow);
-                    contrato.getTipoCargo().remove(selectedRow);
+                    int id = (int) tablaC.getValueAt(selectedRow, 0); //Obtenemos el id en la fila seleccionada de la tabla
+                    int indice = empleados.findEmpleado(id); //Buscamos al empleado en la lista de Empleados
+                    mt.removeRow(selectedRow); // Eliminamos la fila en la tabla
+                    empleados.borrarEmpleado(indice); // Eliminamos los datos correspondientes en Empleados
                 } else {
                     JOptionPane.showMessageDialog(null,"No se ha seleccionado a ningun empleado para borrar", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -234,24 +242,27 @@ public class IntContratos extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = tablaC.getSelectedRow();
                 if (selectedRow != -1) { // Verificamos si se seleccionó una fila
+                    int id = (int) tablaC.getValueAt(selectedRow,0);
+                    int indice = empleados.findEmpleado(id); //Buscamos al empleado en la lista de Empleados
+
                     // Obtenemos los datos modificados
-                    String noContrato = fieldContrato.getText();
-                    String annio = fieldAnnio.getText();
+                    int noContrato = Integer.parseInt(fieldContrato.getText());
+                    int annio = Integer.parseInt(fieldAnnio.getText());
                     String horario = fieldHorario.getText();
                     Cargos tipoCargo = (Cargos) comboCargo.getSelectedItem();
 
 
                     // Actualizamos los datos en la fila seleccionada de la JTable
-                    tablaC.setValueAt(noContrato, selectedRow, 3);
-                    tablaC.setValueAt(annio, selectedRow, 2);
+                    tablaC.setValueAt(noContrato, selectedRow, 2);
+                    tablaC.setValueAt(annio, selectedRow, 3);
                     tablaC.setValueAt(horario, selectedRow, 4);
                     tablaC.setValueAt(tipoCargo, selectedRow, 5);
 
-                    // Actualizamos los datos en Contrato
-                    contrato.getNoContrato().set(selectedRow, Integer.valueOf(noContrato));
-                    contrato.getAnnio().set(selectedRow, Integer.valueOf(annio));
-                    contrato.getHorario().set(selectedRow, horario);
-                    contrato.getTipoCargo().set(selectedRow, String.valueOf(tipoCargo));
+                    //Creamos un objeto con los datos actualizados
+                    Contrato obj = new Contrato(noContrato,annio,horario,tipoCargo);
+
+                    //Guardamos nuestro obj en Empleados
+                    empleados.addContrato(indice,obj);
                 }
             }
         });

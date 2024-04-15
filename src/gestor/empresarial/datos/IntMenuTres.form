@@ -62,7 +62,7 @@
             </properties>
             <border type="none"/>
             <children>
-              <component id="2920e" class="javax.swing.JTable" binding="tablaEmpleados">
+              <component id="2920e" class="javax.swing.JTable" binding="tablaDE">
                 <constraints/>
                 <properties>
                   <background color="-1"/>

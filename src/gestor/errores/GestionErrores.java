@@ -1,30 +1,32 @@
 package gestor.errores;
 
+import gestor.archivos.ArchivoTexto;
+
 public class GestionErrores {
-    private boolean existeError;
-    private int noError;
-    private String DescripcionTecnica;
+    private String descripcionTecnica;
+    private MapaErrores mapaErrores;
+    private ArchivoTexto archivoTexto;
 
-    public GestionErrores(int noError, String descripcionTecnica){
-        this.noError = noError;
-    }
-    private void cargarErrores(){
-
+    public GestionErrores() {
+        mapaErrores = new MapaErrores();
+        archivoTexto = new ArchivoTexto("ListadoErrores");
     }
 
-    public void setNoError(int noError) {
-        this.noError = noError;
+    public String getDescripcionTecnica(int noError) {
+        // Obtenemos el mensaje del error que corresponde a ese numero de error
+        descripcionTecnica = mapaErrores.obtenerMensajeError(noError);
+
+        // Escribimos el código y el mensaje de error en el archivo de texto
+        escribirEnArchivo(noError, descripcionTecnica);
+        return descripcionTecnica;
     }
 
-    public int getNoError() {
-        return noError;
+    private void escribirEnArchivo(int noError, String descripcionTecnica) {
+        archivoTexto.abrirModoEscritura();
+        archivoTexto.escribir("Código de error: " + noError + "\t");
+        archivoTexto.escribir("Mensaje de error: " + descripcionTecnica + "\n");
+        archivoTexto.cerrar();
     }
 
-    public String getDescripcionTecnica() {
-        return DescripcionTecnica;
-    }
 
-    public boolean existeError(){
-        return false;
-    }
 }

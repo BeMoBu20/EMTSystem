@@ -1,6 +1,8 @@
 package gestor.empresarial.datos;
 
 import gestor.IntMenu;
+import gestor.empresarial.empleados.Empleados;
+import gestor.errores.GestionErrores;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -18,7 +20,7 @@ public class IntMenuTres extends JFrame{
     private JTextField fieldPuesto;
     private JButton agregarButton;
     private JButton cerrarButton;
-    private JTable tablaEmpleados;
+    private JTable tablaDE;
     private JScrollPane scrollForTable;
     private JPanel panel2;
     private JButton borrarButton;
@@ -31,82 +33,125 @@ public class IntMenuTres extends JFrame{
     private JTextPane datosEmpresarialesTextPane;
     private JTextPane listaDeEmpleadosTextPane;
     DefaultTableModel mt = new DefaultTableModel(); //Creamos modelo de la tabla
-    private DatosEmpresariales datosEmpresariales; //Generamos un objeto tipo DatosPersonales
-    private DatosPersonales datosPersonales; //Generamos un objeto tipo DatosPersonales
-    private int idEncontrado = 0;
-    private String nombreEncontrado = "";
+    private Empleados empleados;
+    private int indice = -1;
+    private GestionErrores gestionErrores;
 
 
     public IntMenuTres(){
-        datosEmpresariales = DatosEmpresariales.getInstancia();
-        datosPersonales = DatosPersonales.getInstancia();
+        empleados = empleados.getInstancia();
+        gestionErrores = new GestionErrores();
 
-        //Ajustamos los parametros de la ventana
-        setTitle("Menu EMT-System"); //Estabalecemos el titulo de la ventana
+        ajustesVentana(); //Ajustamos los parametros de la ventana
+
+        initComponents(); //Ajustes de la tabla
+        funcionesBotones(); //Codigo que define las funcionalidades de los botones
+    }
+
+    public void ajustesVentana(){
+        setTitle("Menu EMT-System"); //Establecemos el titulo de la ventana
         this.setSize(1100,500); //Establecemos el tamaño de la ventana
         this.setLocationRelativeTo(null); //Establecemos la posicion inicial de la ventana en el centro
         this.getContentPane().add(panel1);
         this.setVisible(true); //Volvemos nuestra ventana visible
         setDefaultCloseOperation(EXIT_ON_CLOSE); //Indicamos que termine la ejecucion del programa al cerrar la ventana
-
-        initComponents(); //Ajustes de la tabla
-        funcionesBotones(); //Codigo que define las funcionalidades de los botones
-        actualizarTablaDesdeDatosEmpresariales(); //Codigo para obtener los datos de la tabla
     }
 
     private void initComponents() {
-        String ids[] = {"ID","Nombre Completo","Extension", "Telefono Exterior","Adscripcion","Puesto"};
-        mt.setColumnIdentifiers(ids);
-        tablaEmpleados.getTableHeader().setResizingAllowed(false);
-        tablaEmpleados.getTableHeader().setReorderingAllowed(false);
-        tablaEmpleados.setModel(mt);
+        String encabezados[] = {"ID","Nombre Completo","Extension", "Telefono Exterior","Adscripcion","Puesto"};
+        mt.setColumnIdentifiers(encabezados); //Definimos los titulos de las columnas
+        tablaDE.getTableHeader().setResizingAllowed(false); //No permitimos que se cambie el tamaño de la ventana
+        tablaDE.getTableHeader().setReorderingAllowed(false); //No permitimos que el usuario reordene las columnas de la tabla
+        tablaDE.setModel(mt); //Establecemos el diseño de la tabla
+        if (empleados.datosEmpVacios() == false) {
+            actualizarTablaDesdeDatosEmpresariales();// Si los arreglos no están vacíos, muestra los datos en la tabla
+        }
     }
 
-    private void obtenerYGuardarDatosEmpresariales() {
+    private void obtenerYGuardarDatosEmpresariales(int indice) {
+        //Obtenemos los datos de los JTextField
         String telefono = fieldTelefono.getText();
         String extension = fieldExtension.getText();
         String adscripcion = fieldAdscripcion.getText();
         String puesto = fieldPuesto.getText();
 
         // Guardamos los datos en DatosEmpresariales
-        datosEmpresariales.addDatos(idEncontrado, nombreEncontrado, extension, telefono, adscripcion, puesto);
-        datosEmpresariales.imprimirDatos();
-        idEncontrado = -1;
-        nombreEncontrado = "";
+        DatosEmpresariales obj = new DatosEmpresariales(telefono, extension, adscripcion, puesto);
+
+        //Guardamos nuestro obj en Empleados
+        empleados.addDatosEmpresariales(indice,obj);
+        this.indice = -1;
+        empleados.imprimirDatos();
     }
 
     private void actualizarTablaDesdeDatosEmpresariales() {
-        datosEmpresariales.imprimirDatos();
-        //Obtenemos los datos de las listas en DatosEmpresariales
-        List<Integer> ids = datosEmpresariales.getIds();
-        List<String> nombres = datosEmpresariales.getNombres();
-        List<String> extensiones = datosEmpresariales.getExtension();
-        List<String> telefonos = datosEmpresariales.getTelefonoExterior();
-        List<String> adscripciones = datosEmpresariales.getAdscripcion();
-        List<String> puesto = datosEmpresariales.getPuesto();
-
         // Limpiamos la tabla antes de agregar los nuevos datos para evitar duplicados
         mt.setRowCount(0);
 
         // Agregamos los datos a la tabla
-        for (int i = 0; i < telefonos.size(); i++) {
-            mt.addRow(new Object[]{ids.get(i), nombres.get(i), extensiones.get(i), telefonos.get(i), adscripciones.get(i), puesto.get(i)});
+        for (int i = 0; i < 100; i++) {
+            DatosEmpresariales obj = empleados.getInfoEmpresarial(i);
+            DatosPersonales obj2 = empleados.getInfoPersonal(i);
+            if(obj != null){
+                int id = empleados.getID(i);
+                String nombre = obj2.getNombre();
+                String telefono = obj.getTelefonoExterior();
+                String extension = obj.getExtension();
+                String adscripcion = obj.getAdscripcion();
+                String puesto = obj.getPuesto();
+                mt.addRow(new Object[]{id,nombre,extension,telefono,adscripcion,puesto});
+            }
         }
     }
 
     public void funcionesBotones() {
-        // Agregar un ListSelectionListener a la JTable
-        tablaEmpleados.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+        fieldBuscador.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String textoBusqueda = fieldBuscador.getText();
+                if (textoBusqueda != null){
+                    // Buscando el ID ingresado en la lista de IDs en Empleados
+                    int idBuscado = Integer.parseInt(textoBusqueda); // Convertir a entero el id
+                    indice = empleados.findEmpleado(idBuscado);
+
+                    // Verificando si se encontró el ID
+                    if (indice != -1) {
+                        DatosPersonales datosPersonales = empleados.getInfoPersonal(indice);
+
+                        //Obteneniendo la información relacionada al ID (nombre, whatsapp, correo) en el arreglo de DatosPersonales
+                        String nombre = datosPersonales.getNombre();
+                        String whatsapp = datosPersonales.getWhatsapp();
+                        String correo = datosPersonales.getCorreo();
+
+                        // Mostrando la información en la ventana
+                        idEmpleado.setText("ID: "+ idBuscado);
+                        nombreEmpleado.setText("Nombre: " + nombre);
+                        whatsEmpleado.setText("Whatsapp: " + whatsapp);
+                        correoEmpleado.setText("Correo: " + correo);
+                        fieldBuscador.setText("");
+                    } else {
+                        String mensaje = gestionErrores.getDescripcionTecnica(4);
+                        JOptionPane.showMessageDialog(IntMenuTres.this, mensaje, "ID no valido", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+                else {
+                    String titulo = gestionErrores.getDescripcionTecnica(1);
+                    JOptionPane.showMessageDialog(IntMenuTres.this, "Campo de busqueda vacio", titulo, JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        tablaDE.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) { // Evitar eventos de selección múltiple
-                    int selectedRow = tablaEmpleados.getSelectedRow();
+                    int selectedRow = tablaDE.getSelectedRow();
                     if (selectedRow != -1) { // Verificar si se seleccionó una fila
                         // Obtener datos de la fila seleccionada
-                        Object telefono = tablaEmpleados.getValueAt(selectedRow, 3);
-                        Object extension = tablaEmpleados.getValueAt(selectedRow, 2);
-                        Object adscripcion = tablaEmpleados.getValueAt(selectedRow, 4);
-                        Object puesto = tablaEmpleados.getValueAt(selectedRow, 5);
+                        Object telefono = tablaDE.getValueAt(selectedRow, 3);
+                        Object extension = tablaDE.getValueAt(selectedRow, 2);
+                        Object adscripcion = tablaDE.getValueAt(selectedRow, 4);
+                        Object puesto = tablaDE.getValueAt(selectedRow, 5);
 
                         // Mostrar los datos en los JTextField
                         fieldTelefono.setText(telefono.toString());
@@ -118,40 +163,7 @@ public class IntMenuTres extends JFrame{
             }
         });
 
-        fieldBuscador.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String textoBusqueda = fieldBuscador.getText();
-                if (textoBusqueda != null){
-                    // Buscando el ID ingresado en la lista de IDs en DatosPersonales
-                    int idBuscado = Integer.parseInt(textoBusqueda); // Convertir a entero
-                    int indice = datosPersonales.getId().indexOf(idBuscado);
 
-                    // Verificando si se encontró el ID
-                    if (indice != -1) {
-                        // Obteneniendo la información relacionada al ID (nombre, whatsapp, correo) en la lista en DatosPersonales
-                        idEncontrado = idBuscado;
-                        nombreEncontrado = datosPersonales.getNombre().get(indice);
-                        String whatsapp = datosPersonales.getWhatsapp().get(indice);
-                        String correo = datosPersonales.getCorreo().get(indice);
-
-                        // Mostrando la información en la ventana
-                        idEmpleado.setText("ID: "+ idBuscado);
-                        nombreEmpleado.setText("Nombre: " + nombreEncontrado);
-                        whatsEmpleado.setText("Whatsapp: " + whatsapp);
-                        correoEmpleado.setText("Correo: " + correo);
-                        fieldBuscador.setText("");
-                    } else {
-                        // Mostrar un mensaje de error si no se encuentra el ID
-                        JOptionPane.showMessageDialog(IntMenuTres.this, "ID no encontrado", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-                else {
-                    // Mostrar un mensaje de error si esta vacio el campo
-                    JOptionPane.showMessageDialog(IntMenuTres.this, "Campo de busqueda vacio", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
 
         cerrarButton.addActionListener(new ActionListener() {
             @Override
@@ -164,7 +176,7 @@ public class IntMenuTres extends JFrame{
         agregarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (idEncontrado != -1 && nombreEncontrado != ""){
+                if (indice != -1){
                     String telefonos = fieldTelefono.getText();
                     String extension = fieldExtension.getText();
                     String adscripcion = fieldAdscripcion.getText();
@@ -172,7 +184,7 @@ public class IntMenuTres extends JFrame{
                     // Verificar que ningún campo esté vacío
                     if (telefonos.isEmpty() || extension.isEmpty() || adscripcion.isEmpty() || puesto.isEmpty()) {
                         // Mostrar un mensaje de error indicando al usuario qué campo olvidó rellenar
-                        String mensaje = "Por favor, complete todos los campos:\n";
+                        String mensaje = gestionErrores.getDescripcionTecnica(1);
                         if (telefonos.isEmpty()) {
                             mensaje += "- Telefono\n";
                         }
@@ -187,8 +199,8 @@ public class IntMenuTres extends JFrame{
                         }
                         JOptionPane.showMessageDialog(null, mensaje, "Campos Vacíos", JOptionPane.ERROR_MESSAGE);
                     } else {
-                        // Si todos los campos están llenos, procede a agregar la fila a la tabla
-                        obtenerYGuardarDatosEmpresariales();
+                        // Si todos los campos están llenos, procedemos a agregar la fila a la tabla
+                        obtenerYGuardarDatosEmpresariales(indice);
                         actualizarTablaDesdeDatosEmpresariales();
                         // Limpiamos los JTextField después de agregar la fila
                         fieldTelefono.setText("");
@@ -202,7 +214,8 @@ public class IntMenuTres extends JFrame{
                     }
                 }
                 else{
-                    JOptionPane.showMessageDialog(null,"No se ha seleccionado a ningun empleado para añadir los datos", "Error", JOptionPane.ERROR_MESSAGE);
+                    String mensaje = gestionErrores.getDescripcionTecnica(5);
+                    JOptionPane.showMessageDialog(null,mensaje, "Datos no agregados", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -210,19 +223,15 @@ public class IntMenuTres extends JFrame{
         borrarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = tablaEmpleados.getSelectedRow();
+                int selectedRow = tablaDE.getSelectedRow();
                 if (selectedRow != -1) {
-                    mt.removeRow(selectedRow); //Eliminamos la fila en la tabla
-
-                    // Eliminamos los datos correspondientes en DatosPersonales
-                    datosEmpresariales.getIds().remove(selectedRow);
-                    datosEmpresariales.getNombres().remove(selectedRow);
-                    datosEmpresariales.getExtension().remove(selectedRow);
-                    datosEmpresariales.getTelefonoExterior().remove(selectedRow);
-                    datosEmpresariales.getAdscripcion().remove(selectedRow);
-                    datosEmpresariales.getPuesto().remove(selectedRow);
+                    int id = (int) tablaDE.getValueAt(selectedRow, 0); //Obtenemos el id en la fila seleccionada de la tabla
+                    int indice = empleados.findEmpleado(id); //Buscamos al empleado en la lista de Empleados
+                    mt.removeRow(selectedRow); // Eliminamos la fila en la tabla
+                    empleados.borrarEmpleado(indice); // Eliminamos los datos correspondientes en Empleados
                 } else {
-                    JOptionPane.showMessageDialog(null,"No se ha seleccionado a ningun empleado para borrar", "Error", JOptionPane.ERROR_MESSAGE);
+                    String mensaje = gestionErrores.getDescripcionTecnica(5);
+                    JOptionPane.showMessageDialog(null,mensaje, "No se puede borrar", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -230,8 +239,11 @@ public class IntMenuTres extends JFrame{
         modificarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = tablaEmpleados.getSelectedRow();
+                int selectedRow = tablaDE.getSelectedRow();
                 if (selectedRow != -1) { // Verificamos si se seleccionó una fila
+                    int id = (int) tablaDE.getValueAt(selectedRow, 0);
+                    int indice = empleados.findEmpleado(id); //Buscamos al empleado en la lista de Empleados
+
                     // Obtenemos los datos modificados
                     String telefono = fieldTelefono.getText();
                     String extension = fieldExtension.getText();
@@ -239,16 +251,19 @@ public class IntMenuTres extends JFrame{
                     String puesto = fieldPuesto.getText();
 
                     // Actualizamos los datos en la fila seleccionada de la JTable
-                    tablaEmpleados.setValueAt(telefono, selectedRow, 3);
-                    tablaEmpleados.setValueAt(extension, selectedRow, 2);
-                    tablaEmpleados.setValueAt(adscripcion, selectedRow, 4);
-                    tablaEmpleados.setValueAt(puesto, selectedRow, 5);
+                    tablaDE.setValueAt(telefono, selectedRow, 3);
+                    tablaDE.setValueAt(extension, selectedRow, 2);
+                    tablaDE.setValueAt(adscripcion, selectedRow, 4);
+                    tablaDE.setValueAt(puesto, selectedRow, 5);
 
-                    // Actualizamos los datos en DatosEmpresarial
-                    datosEmpresariales.getExtension().set(selectedRow, extension);
-                    datosEmpresariales.getTelefonoExterior().set(selectedRow, telefono);
-                    datosEmpresariales.getAdscripcion().set(selectedRow, adscripcion);
-                    datosEmpresariales.getPuesto().set(selectedRow, puesto);
+                    // Creamos un objeto con los datos actualizados
+                    DatosEmpresariales obj = new DatosEmpresariales(telefono,extension,adscripcion,puesto);
+
+                    //Guardamos nuestro obj en Empleados
+                    empleados.addDatosEmpresariales(indice,obj);
+                } else {
+                    String mensaje = gestionErrores.getDescripcionTecnica(5);
+                    JOptionPane.showMessageDialog(null,mensaje, "No se puede modificar", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });

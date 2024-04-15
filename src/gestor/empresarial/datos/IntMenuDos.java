@@ -1,14 +1,14 @@
 package gestor.empresarial.datos;
 
 import gestor.IntMenu;
+import gestor.empresarial.empleados.Empleados;
+import gestor.errores.GestionErrores;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
+import javax.swing.event.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 
 public class IntMenuDos extends JFrame{
     private JPanel panel1;
@@ -26,22 +26,26 @@ public class IntMenuDos extends JFrame{
     private JTextPane datosGuardadosTextPane;
     private JTextPane datosPersonalesTextPane;
     DefaultTableModel mt = new DefaultTableModel(); //Creamos modelo de la tabla
-    private DatosPersonales datosPersonales; //Generamos un objeto tipo DatosPersonales
+    private Empleados empleados;
+    private GestionErrores gestionErrores;
 
     public IntMenuDos(){
-        datosPersonales = DatosPersonales.getInstancia();
+        empleados = empleados.getInstancia();
+        gestionErrores = new GestionErrores();
 
-        //Ajustamos los parametros de nuestra ventana
+        ajustesVentana(); //Ajustamos los parametros de nuestra ventana
+
+        initComponents(); //Ajustes de la tabla
+        funcionesBotones(); //Codigo de las funcionalidades de los botones
+    }
+
+    public void ajustesVentana(){
         setTitle("Menu EMT-System"); //Establecemos el titulo de la ventana
         this.setSize(1000,600); //Establecemos el tamaño de la ventana
         this.setLocationRelativeTo(null); //Establecemos la posicion inicial de la ventana en el centro
         this.getContentPane().add(panel1); //Obtenemos el contenido del panel
         this.setVisible(true); //Volvemos nuestra ventana visible
         setDefaultCloseOperation(EXIT_ON_CLOSE); //Indicamos que termine la ejecucion del programa al cerrar la ventana
-
-        initComponents(); //Ajustes de la tabla
-        funcionesBotones(); //Codigo de las funcionalidades de los botones
-        actualizarTablaDesdeDatosPersonales(); //Codigo para obtener los de la tabla
     }
 
     private void initComponents() {
@@ -50,45 +54,83 @@ public class IntMenuDos extends JFrame{
         tablaDP.getTableHeader().setResizingAllowed(false);
         tablaDP.getTableHeader().setReorderingAllowed(false);
         tablaDP.setModel(mt);
+        if (empleados.datosPerVacios() == false) {
+            actualizarTablaDesdeDatosPersonales();// Si los arreglos no están vacíos, muestra los datos en la tabla
+        }
     }
 
     private void obtenerYGuardarDatosPersonales() {
-        int id = Integer.parseInt(fieldID.getText());
+        //Obtenemos los datos de los JTextField
         String nombre = fieldName.getText();
         String whatsapp = fieldWhats.getText();
         String email = fieldMail.getText();
 
         // Guardamos los datos en DatosPersonales
-        datosPersonales.addDatos(id, nombre, whatsapp, email);
-        datosPersonales.imprimirDatos();
+        DatosPersonales obj = new DatosPersonales(nombre,whatsapp,email);
+
+        //Guardamos nuestro obj en Empleados
+        empleados.addDatosPersonales(obj);
+        empleados.imprimirDatos();
     }
 
     private void actualizarTablaDesdeDatosPersonales() {
-        datosPersonales.imprimirDatos();
-        //Obtenemos los datos de las listas en DatosPersonales
-        List<Integer> ids = datosPersonales.getId();
-        List<String> nombres = datosPersonales.getNombre();
-        List<String> whatsapps = datosPersonales.getWhatsapp();
-        List<String> emails = datosPersonales.getCorreo();
-
         // Limpiamos la tabla antes de agregar los nuevos datos para evitar duplicados
         mt.setRowCount(0);
 
         // Agregamos los datos a la tabla
-        for (int i = 0; i < ids.size(); i++) {
-            mt.addRow(new Object[]{ids.get(i), nombres.get(i), whatsapps.get(i), emails.get(i)});
+        for (int i = 0; i < 100; i++) {
+            DatosPersonales obj = empleados.getInfoPersonal(i);
+            if(obj != null){
+                int id = empleados.getID(i);
+                String nombre = obj.getNombre();
+                String whatsapp = obj.getWhatsapp();
+                String correo = obj.getCorreo();
+                mt.addRow(new Object[]{id,nombre,whatsapp,correo});
+            }
         }
     }
 
+    public boolean verificarCampos(){
+        boolean camposCorrectos = true;
+        String titulo;
+        if (fieldID.getText().isEmpty() || fieldName.getText().isEmpty() || fieldWhats.getText().isEmpty() || fieldMail.getText().isEmpty()) {
+            // Mostramos un mensaje de error indicando al usuario qué campos olvidó rellenar
+            titulo = gestionErrores.getDescripcionTecnica(1);
+            String mensaje = "Por favor, complete todos los campos:\n";
+            if (fieldID.getText().isEmpty()) {
+                mensaje += "- ID\n";
+            }
+            if (fieldName.getText().isEmpty()) {
+                mensaje += "- Nombre\n";
+            }
+            if (fieldWhats.getText().isEmpty()) {
+                mensaje += "- Whatsapp\n";
+            }
+            if (fieldMail.getText().isEmpty()) {
+                mensaje += "- Email\n";
+            }
+            JOptionPane.showMessageDialog(null, mensaje, titulo, JOptionPane.ERROR_MESSAGE);
+            camposCorrectos = false;
+        } else {
+            boolean hayDuplicados = empleados.buscarDuplicadosP(Integer.parseInt(fieldID.getText()),fieldName.getText(),fieldWhats.getText(),fieldMail.getText());
+            if (hayDuplicados) {
+                titulo = gestionErrores.getDescripcionTecnica(6);
+                JOptionPane.showMessageDialog(null, "Ya se ha guardado un empleado con esos mismos datos, favor de verificar la información", titulo, JOptionPane.ERROR_MESSAGE);
+                camposCorrectos = false;
+            }
+        }
+        return camposCorrectos;
+    }
+
     public void funcionesBotones(){
-        // Agregar un ListSelectionListener a la JTable
+        // Agregamos un ListSelectionListener a la JTable
         tablaDP.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                if (!e.getValueIsAdjusting()) { // Evitar eventos de selección múltiple
+                if (!e.getValueIsAdjusting()) { // Con esto evitamos eventos de selección múltiple
                     int selectedRow = tablaDP.getSelectedRow();
-                    if (selectedRow != -1) { // Verificar si se seleccionó una fila
-                        // Obtener datos de la fila seleccionada
+                    if (selectedRow != -1) { // Verificamos si se seleccionó una fila
+                        // Obtenemos datos de la fila seleccionada
                         Object id = tablaDP.getValueAt(selectedRow, 0);
                         Object nombre = tablaDP.getValueAt(selectedRow, 1);
                         Object whatsapp = tablaDP.getValueAt(selectedRow, 2);
@@ -119,26 +161,9 @@ public class IntMenuDos extends JFrame{
                 String nombre = fieldName.getText();
                 String wh = fieldWhats.getText();
                 String correo = fieldMail.getText();
-                // Verificar que ningún campo esté vacío
-                if (idText.isEmpty() || nombre.isEmpty() || wh.isEmpty() || correo.isEmpty()) {
-                    // Mostrar un mensaje de error indicando al usuario qué campo olvidó rellenar
-                    String mensaje = "Por favor, complete todos los campos:\n";
-                    if (idText.isEmpty()) {
-                        mensaje += "- ID\n";
-                    }
-                    if (nombre.isEmpty()) {
-                        mensaje += "- Nombre\n";
-                    }
-                    if (wh.isEmpty()) {
-                        mensaje += "- Whatsapp\n";
-                    }
-                    if (correo.isEmpty()) {
-                        mensaje += "- Email\n";
-                    }
-                    JOptionPane.showMessageDialog(null, mensaje, "Campos Vacíos", JOptionPane.ERROR_MESSAGE);
-                } else {
-                    // Si todos los campos están llenos, procede a agregar la fila a la tabla
-                    int id = Integer.parseInt(idText);
+                boolean camposCorrectos = verificarCampos();// Verificar que ningún campo esté vacío o duplicado
+                if (camposCorrectos == true) {
+                    // Si todos los campos están correctos, procedemos a agregar la fila a la tabla
                     obtenerYGuardarDatosPersonales();
                     actualizarTablaDesdeDatosPersonales();
                     // Limpiamos los JTextField después de agregar la fila
@@ -155,15 +180,13 @@ public class IntMenuDos extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = tablaDP.getSelectedRow();
                 if (selectedRow != -1) {
+                    int id = (int) tablaDP.getValueAt(selectedRow, 0);
+                    int indice = empleados.findEmpleado(id); //Buscamos al empleado en la lista de Empleados
                     mt.removeRow(selectedRow); // Eliminamos la fila en la tabla
-
-                    // Eliminamos los datos correspondientes en DatosPersonales
-                    datosPersonales.getId().remove(selectedRow);
-                    datosPersonales.getNombre().remove(selectedRow);
-                    datosPersonales.getWhatsapp().remove(selectedRow);
-                    datosPersonales.getCorreo().remove(selectedRow);
+                    empleados.borrarEmpleado(indice); // Eliminamos los datos correspondientes en Empleados
                 } else {
-                    JOptionPane.showMessageDialog(null, "No se ha seleccionado ningún candidato para borrar", "Error", JOptionPane.ERROR_MESSAGE);
+                    String titulo = gestionErrores.getDescripcionTecnica(5);
+                    JOptionPane.showMessageDialog(null, "No se ha seleccionado ningún candidato para borrar", titulo, JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -173,26 +196,28 @@ public class IntMenuDos extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = tablaDP.getSelectedRow();
                 if (selectedRow != -1) { // Verificamos si se seleccionó una fila
+                    int id = (int) tablaDP.getValueAt(selectedRow, 0);
+                    int indice = empleados.findEmpleado(id); //Buscamos al empleado en la lista de Empleados
+
                     // Obtenemos los datos modificados
-                    int id = Integer.parseInt(fieldID.getText());
                     String nombre = fieldName.getText();
-                    String wh = fieldWhats.getText();
+                    String whats = fieldWhats.getText();
                     String correo = fieldMail.getText();
 
                     // Actualizamos los datos en la fila seleccionada de la JTable
-                    tablaDP.setValueAt(id, selectedRow, 0);
                     tablaDP.setValueAt(nombre, selectedRow, 1);
-                    tablaDP.setValueAt(wh, selectedRow, 2);
+                    tablaDP.setValueAt(whats, selectedRow, 2);
                     tablaDP.setValueAt(correo, selectedRow, 3);
 
-                    // Actualizamos los datos en DatosPersonales
-                    datosPersonales.getId().set(selectedRow, id);
-                    datosPersonales.getNombre().set(selectedRow, nombre);
-                    datosPersonales.getWhatsapp().set(selectedRow, wh);
-                    datosPersonales.getCorreo().set(selectedRow, correo);
+                    // Creamos un objeto con los datos actualizados
+                    DatosPersonales obj = new DatosPersonales(nombre,whats,correo);
+
+                    //Guardamos nuestro obj en Empleados
+                    empleados.modificarEmpleado(indice,obj);
                 }
                 else {
-                    JOptionPane.showMessageDialog(null, "No se ha seleccionado ningún candidato para modificar", "Error", JOptionPane.ERROR_MESSAGE);
+                    String titulo = gestionErrores.getDescripcionTecnica(5);
+                    JOptionPane.showMessageDialog(null, "No se ha seleccionado ningún candidato para modificar", titulo, JOptionPane.ERROR_MESSAGE);
                 }
             }
         });

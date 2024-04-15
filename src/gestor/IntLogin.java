@@ -1,5 +1,7 @@
 package gestor;
 
+import gestor.errores.GestionErrores;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,9 +16,10 @@ public class IntLogin extends JFrame {
     private JLabel etPass;
     private JLabel imagUser;
     private JPasswordField pass;
-    //boton1.setEnabled(true) para que sirva y false para que no se pueda clikear
+    private GestionErrores gestionErrores;
 
     public IntLogin(){
+        gestionErrores = new GestionErrores();
         setTitle("EMT-System"); //Estabalecemos el titulo de la ventana
         this.setSize(300,300); //Establecemos el tamaño de la ventana
         this.setResizable(false);
@@ -32,14 +35,17 @@ public class IntLogin extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 String usuario = usuarioTextField.getText();
                 String contrasenia = pass.getText();
-
-                boolean accesoValido = usuario.equals("admin") && contrasenia.equals("123");
-
-                if (accesoValido) {
-                    IntMenu obj = new IntMenu();
-                    dispose();
+                if (!usuario.isEmpty() && !contrasenia.isEmpty()) {
+                    if (usuario.equals("Tomas") && contrasenia.equals("talento")) {
+                        IntMenu obj = new IntMenu();
+                        dispose();
+                    } else {
+                        String mensaje = gestionErrores.getDescripcionTecnica(2);
+                        JOptionPane.showMessageDialog(null, mensaje, "Datos no válidos", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
-                    JOptionPane.showMessageDialog(null, "Usuario o contraseña incorrectos");
+                    String mensaje = gestionErrores.getDescripcionTecnica(3);
+                    JOptionPane.showMessageDialog(null, mensaje, "Campos vacíos", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
