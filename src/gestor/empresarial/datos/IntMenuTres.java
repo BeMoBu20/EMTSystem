@@ -10,7 +10,6 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.List;
 
 public class IntMenuTres extends JFrame{
     private JPanel panel1;
